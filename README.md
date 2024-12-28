@@ -11,4 +11,4 @@ To set up the repository, see [**INSTALL.md**](INSTALL.md).
 
 Thanks to https://github.com/ejona86 for creating an info file and other files used to generate the disassembly code and other parts of the disassembly. (Original repository link:  https://github.com/ejona86/taus)
 
-Build script derived from https://github.com/kirjavascript/TetrisNESDisasm
+Build script derived from https://github.com/kirjavascript/TetrisGYM
