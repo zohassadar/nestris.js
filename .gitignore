@@ -2,8 +2,9 @@
 *.o
 *.chr
 *.pyc
-tetris.lst
-tetris.lbl
-tetris.dbg
+*.lst
+*.lbl
+*.dbg
+*.map
 cTools/scan_includes
 cTools/scan_includes.exe
