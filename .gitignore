@@ -1,10 +1,7 @@
 *.nes
 *.o
 *.chr
-*.pyc
 *.lst
 *.lbl
 *.dbg
 *.map
-cTools/scan_includes
-cTools/scan_includes.exe
