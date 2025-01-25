@@ -99,7 +99,6 @@ const flags = compileFlags.length ? ` ${compileFlags.join(' ')}` : '';
 console.time('assemble');
 
 exec(`${ca65bin}${flags} -g tetris.asm -o ${output}.o`);
-exec(`${ca65bin}${flags} -g tetris-ram.asm -o ${output}-ram.o`);
 
 console.timeEnd('assemble');
 
@@ -110,7 +109,7 @@ const ld65bin = nativeCC65 ? 'ld65' : 'node ./tools/assemble/ld65.js';
 console.time('link');
 
 exec(
-    `${ld65bin} -m ${output}.map -Ln ${output}.lbl --dbgfile ${output}.dbg -o ${output}.nes -C tetris.nes.cfg ${output}.o ${output}-ram.o`,
+    `${ld65bin} -m ${output}.map -Ln ${output}.lbl --dbgfile ${output}.dbg -o ${output}.nes -C tetris.nes.cfg ${output}.o`,
 );
 
 console.timeEnd('link');

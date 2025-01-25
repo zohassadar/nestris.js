@@ -1,11 +1,11 @@
-;
-; iNES header
-;
+.setcpu "6502"
+.feature force_range ; allows -1 vs <-1 (used in orientationTable)
+.linecont
+
+.segment "HEADER"
 
 ; This iNES header is from Brad Smith (rainwarrior)
 ; https://github.com/bbbradsmith/NES-ca65-example
-
-.segment "HEADER"
 
 INES_MAPPER = 1 ; 0 = NROM
 INES_MIRROR = 0 ; 0 = horizontal mirroring, 1 = vertical mirroring
@@ -19,6 +19,9 @@ INES_SRAM   = 0 ; 1 = battery backed SRAM at $6000-7FFF
 .byte $0, $0, $0, $0, $0, $0, $0, $0 ; padding
 
 ; PRG segments
+
+.include "constants.asm"
+.include "tetris-ram.asm"
 .include "main.asm"
 
 .segment "CHR"
