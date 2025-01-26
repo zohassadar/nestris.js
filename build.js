@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { spawnSync } = require('child_process');
 
 console.log('TetrisNESDisasm buildscript');
 console.time('build');
@@ -20,6 +21,16 @@ if (args.includes('-h')) {
     process.exit(0);
 }
 
+function exec(cmd) {
+    const [exe, ...args] = cmd.split(' ');
+    const output = spawnSync(exe, args).output.flatMap(
+        (d) => d?.toString() || [],
+    );
+    if (output.length) {
+        console.log(output.join('\n'));
+        process.exit(0);
+    }
+}
 const compileFlags = [];
 
 // compiler options
@@ -57,13 +68,13 @@ console.time('CHR');
 
 const png2chr = require('./tools/png2chr/convert');
 
-const dir = path.join(__dirname, 'gfx');
+const pngDir = path.join(__dirname, 'gfx');
 
-fs.readdirSync(dir)
+fs.readdirSync(pngDir)
     .filter((name) => name.endsWith('.png'))
     .forEach((name) => {
-        const png = path.join(dir, name);
-        const chr = path.join(dir, name.replace('.png', '.chr'));
+        const png = path.join(pngDir, name);
+        const chr = path.join(pngDir, name.replace('.png', '.chr'));
 
         const pngStat = fs.statSync(png, { throwIfNoEntry: false });
         const chrStat = fs.statSync(chr, { throwIfNoEntry: false });
@@ -78,20 +89,35 @@ fs.readdirSync(dir)
 
 console.timeEnd('CHR');
 
+// Python nametables
+
+console.time('nametables');
+
+const ntDir = path.join(__dirname, 'gfx', 'nametables');
+fs.readdirSync(ntDir)
+    .filter((name) => name.endsWith('_nametable.py'))
+    .forEach((name) => {
+        const py = path.join(ntDir, name);
+        const nt = path.join(ntDir, name.replace('.py', '.bin'));
+
+        const pyStat = fs.statSync(py, { throwIfNoEntry: false });
+        const ntStat = fs.statSync(nt, { throwIfNoEntry: false });
+
+        const staleNT = !ntStat || ntStat.mtime < pyStat.mtime;
+
+        if (staleNT || args.includes('-N')) {
+            console.log(`${name} => ${path.basename(nt)}`);
+            if (compileFlags.length > 0) {
+                exec(`python ${py} ${compileFlags.join(' ')}`);
+            } else {
+                exec(`python ${py}`);
+            }
+        }
+    });
+
+console.timeEnd('nametables');
+
 // build object files
-
-const { spawnSync } = require('child_process');
-
-function exec(cmd) {
-    const [exe, ...args] = cmd.split(' ');
-    const output = spawnSync(exe, args).output.flatMap(
-        (d) => d?.toString() || [],
-    );
-    if (output.length) {
-        console.log(output.join('\n'));
-        process.exit(0);
-    }
-}
 
 const ca65bin = nativeCC65 ? 'ca65' : 'node ./tools/assemble/ca65.js';
 const flags = compileFlags.length ? ` ${compileFlags.join(' ')}` : '';
