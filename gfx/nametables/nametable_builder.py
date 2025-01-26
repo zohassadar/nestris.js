@@ -1,20 +1,18 @@
 import argparse
 import hashlib
 import logging
-import os
 import pprint
 import re
+import subprocess
 import sys
+import pathlib
 from collections import Counter
 
 logger = logging.getLogger(__name__)
-verbose=os.getenv("verbose")
-logging.basicConfig(level=logging.DEBUG if verbose else logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 
 
-BUILD_HEADER = '''
-import argparse
-import pathlib
+BUILD_HEADER = '''import pathlib
 import sys
 
 import nametable_builder
@@ -28,12 +26,6 @@ Unless modified, it will reproduce the original.
 
 file = pathlib.Path(__file__)
 output = file.parent / file.name.replace(".py", ".bin")
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-D', '--buildflag', action='append', dest='buildflags', help='Build Flag')
-args = parser.parse_args()
-buildflags = args.buildflags if args.buildflags else []
-
 '''
 
 BUILD_FOOTER = """
@@ -52,8 +44,7 @@ if __name__ == "__main__":
         print(
             f"Unable to build nametable: {type(exc).__name__}: {exc!s}", file=sys.stderr
         )
-        sys.exit(1)
-"""
+        sys.exit(1)"""
 
 FINDALL_NON_NEWLINES = re.compile(r"[^\n]").findall
 
@@ -78,7 +69,7 @@ def extract_bytes_from_nametable(
     nametable = open(nametable_filename, "rb").read()
     logger.debug(f"Original file length is {len(nametable)}")
     original_sha1sum = hashlib.sha1(nametable).hexdigest()
-    logger.debug(f"Original sha1sum is {original_sha1sum}")
+    logger.info(f"Original sha1sum is {original_sha1sum}")
 
     with open(nametable_filename, "rb") as file:
         while True:
@@ -162,21 +153,42 @@ def format_characters(characters_raw: str):
     return "\n".join(output)
 
 
-def break_nametable(args: Args):
-    characters_raw = open(args.characters).read()
-
+def break_nametable_from_args(args: Args):
     logger.debug(f"Opening characters file {args.characters}")
+    characters_raw = open(args.characters).read()
     logger.debug(f"characters is {len(characters_raw)} characters long")
-    characters = FINDALL_NON_NEWLINES(characters_raw)
-    validate_characters(characters)
-    logger.debug(f"characters length is {len(characters)}")
 
     starting_addresses, lengths, data, original_sha1sum = extract_bytes_from_nametable(
         args.nametable
     )
 
+    output_file = args.output or args.nametable.replace(".bin", ".py")
+    break_nametable(
+        output_file,
+        starting_addresses,
+        data,
+        lengths,
+        original_sha1sum,
+        args.skip_attrs,
+        characters_raw,
+    )
+
+
+def break_nametable(
+    output_file: str,
+    starting_addresses: list[tuple[int, int]],
+    data: list[int],
+    lengths: list[int],
+    original_sha1sum: str,
+    skip_attrs: bool,
+    characters_raw: str,
+):
+    characters = FINDALL_NON_NEWLINES(characters_raw)
+    validate_characters(characters)
+    logger.debug(f"characters length is {len(characters)}")
+
     attributes_output = []
-    if not args.skip_attrs:
+    if not skip_attrs:
         attributes_raw = data[-64:]
         attributes_output = break_out_attribute_table(attributes_raw)
         data = data[:-64]
@@ -188,7 +200,7 @@ def break_nametable(args: Args):
         text_row = "".join(characters[byte] for byte in row)
         nametable_output.append(text_row)
 
-    with open(args.output or args.nametable.replace(".bin", ".py"), "w+") as file:
+    with open(output_file, "w+") as file:
         print(BUILD_HEADER, file=file)
 
         print(f'original_sha1sum = "{original_sha1sum}"\n', file=file)
@@ -241,14 +253,18 @@ def validate_characters(characters: list[str]):
 
 
 def build_nametable(
-    output: str,
+    output: str | pathlib.Path,
     table: str,
     attributes: str,
     characters: str,
     original_sha1sum: str,
     lengths: list[int],
     starting_addresses: list[tuple[int, int]],
+    rle_compress: bool = False,
+    rects=None,
 ) -> None:
+    if rects is None:
+        rects = []
     validate_characters(characters)
     logger.debug(f"Read {len(lengths)} lengths")
     logger.debug(f"Read {len(starting_addresses)} starting addresses")
@@ -263,24 +279,122 @@ def build_nametable(
 
     table_bytes.extend(attribute_bytes)
     logger.debug(f"Read {len(table_bytes)} bytes total")
+    for rect in rects:
+        draw_rect(table_bytes, *rect)
 
-    output_bytes = []
-    for length, starting_address in zip(lengths, starting_addresses):
-        output_bytes.extend(starting_address)
-        output_bytes.append(length)
-        output_bytes.extend(table_bytes[:length])
-        table_bytes = table_bytes[length:]
+    if rle_compress:
+        output_data = konami_compress(table_bytes)
+    else:
+        output_bytes = []
+        for length, starting_address in zip(lengths, starting_addresses):
+            output_bytes.extend(starting_address)
+            output_bytes.append(length)
+            output_bytes.extend(table_bytes[:length])
+            table_bytes = table_bytes[length:]
 
-    output_bytes.append(255)
+        output_bytes.append(255)
+        output_data = bytes(output_bytes)
 
-    output_data = bytes(output_bytes)
     sha1sum = hashlib.sha1(output_data).hexdigest()
     if sha1sum != original_sha1sum:
         logger.warning(f"Warning! {sha1sum} does not match original {original_sha1sum}")
     else:
         logger.debug(f"Original nametable being rebuilt")
+
     with open(output, "wb") as file:
         file.write(output_data)
+
+
+def draw_rect(buffer, x, y, w, h, offset):
+    """
+    credit to kirjava
+    function drawRect(buffer, x, y, w, h, offset) {
+        x += 3;
+        const pixel = x+ (y*32);
+        for (let i=0;w>i;i++) {
+            for (let j=0;h>j;j++) {
+                buffer[pixel + i + (j * 32)] = offset+i + (j * 0x10);
+            }
+        }
+    }
+    """
+    x += 3
+    pixel = x + (y * 32)
+    for i in range(w):
+        for j in range(h):
+            buffer[pixel + i + (j * 32)] = offset + i + (j * 0x10)
+
+
+def konami_compress(buffer) -> bytes:
+    """
+    credit to kirjava
+    function konamiComp(buffer) {
+        const compressed = [];
+
+        for (let i = 0; i < buffer.length;) {
+            const byte = buffer[i];
+
+            // count extra dupes
+            let peek = 0;
+            for (;byte ==buffer[i+1+peek];peek++);
+            const count = Math.min(peek + 1, 0x80);
+
+            if (peek > 0) {
+                compressed.push([count, byte]);
+                i+= count;
+            } else {
+                // we have already peeked the next byte and know it's not a double
+                // so start checking from there
+                const start = i + 1;
+                const nextDouble = buffer.slice(start, start + 0x7F)
+                    .findIndex((d,i,a)=>d==a[i+1]);
+
+                const count = Math.min(nextDouble === -1
+                    ? buffer.length - i
+                    : nextDouble + 1, 0x7F);
+
+                compressed.push([0x80 + count, buffer.slice(i, count + i)]);
+                i += count;
+            }
+        }
+
+        compressed.push(0xFF);
+
+        return compressed.flat(Infinity);
+    }
+    """
+    compressed = []
+    i = 0
+    while i < len(buffer):
+        byte = buffer[i]
+
+        # count duplicates
+        peek = 0
+        while True:
+            if i + peek + 1 == len(buffer) or peek == 0x80:
+                break
+            if byte == buffer[i + peek + 1]:
+                peek += 1
+            else:
+                break
+        count = min(peek + 1, 0x80)
+        if peek:
+            compressed.extend([count, byte])
+            i += count
+            continue
+
+        # count non duplicates
+        start = i + 1
+        for count, check in enumerate(buffer[i : i + 0x7F]):
+            if i + count + 1 == len(buffer):
+                break
+            if check == buffer[i + count + 1]:
+                break
+        compressed.append(0x80 + count)
+        compressed.extend(buffer[i : i + count])
+        i += count
+
+    return bytes(compressed + [0xFF])
 
 
 def get_args():
@@ -321,7 +435,7 @@ def get_args():
 
 def main():
     actions = {
-        "break": break_nametable,
+        "break": break_nametable_from_args,
     }
     args = get_args()
     actions[args.action](args)
