@@ -69,6 +69,10 @@ PAL = 0
 NWC = 0
 .endif
 
+.ifndef ANYDAS
+ANYDAS = 0
+.endif
+
 .if PAL = 1
 
 DAS_DELAY := $08

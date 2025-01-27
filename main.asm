@@ -372,7 +372,12 @@ gameMode_titleScreen:
         beq     @startButtonPressed
         lda     frameCounter+1
         cmp     #$05
+.if ANYDAS = 1
+        beq     @noTimeout
+@noTimeout:
+.else
         beq     @timeout
+.endif
         jmp     @waitForStartButton
 
 ; Show menu screens
@@ -551,7 +556,11 @@ L830B:  lda     #$FF
         sta     spriteIndexInOamContentLookup
 @flickerCursorPair2:
         jsr     loadSpriteIntoOamStaging
+.if ANYDAS = 1
+        jsr     copyGameSettingsThenWait
+.else
         jsr     updateAudioWaitForNmiAndResetOamStaging
+.endif
         jmp     L830B
 .endif
 
@@ -631,7 +640,11 @@ gameMode_levelMenu_processPlayer1Navigation:
         bne     @startAndANotPressed
         lda     player1_startLevel
         clc
+.if ANYDAS = 1
+        adc     levelOffset
+.else
         adc     #$0A
+.endif
         sta     player1_startLevel
 @startAndANotPressed:
 .endif
@@ -672,7 +685,11 @@ gameMode_levelMenu_processPlayer1Navigation:
         cmp     #$0A
         bpl     @chooseRandomHole_player2
         sta     player2_garbageHole
+.if ANYDAS = 1
+        jsr     copyGameSettingsThenWait
+.else
         jsr     updateAudioWaitForNmiAndResetOamStaging
+.endif
         jmp     gameMode_levelMenu_processPlayer1Navigation
 
 ; Starts by checking if right pressed
@@ -1377,25 +1394,36 @@ shift_tetrimino:
         sta     originalY
         lda     heldButtons
         and     #BUTTON_DOWN
-        bne     @ret
+        bne     shift_ret
         lda     newlyPressedButtons
         and     #BUTTON_LEFT+BUTTON_RIGHT
         bne     @resetAutorepeatX
         lda     heldButtons
         and     #BUTTON_LEFT+BUTTON_RIGHT
-        beq     @ret
+        beq     shift_ret
+.if ANYDAS = 1
+        dec     autorepeatX
+        lda     autorepeatX
+        cmp     #$01
+        bpl     shift_ret
+        lda     anydasARRValue
+        sta     autorepeatX
+        jmp     checkFor0Arr
+@resetAutorepeatX:
+        lda     anydasDASValue
+.else
         inc     autorepeatX
         lda     autorepeatX
         cmp     #DAS_RESET
-        bmi     @ret
+        bmi     shift_ret
         lda     #DAS_DELAY
         sta     autorepeatX
-        jmp     @buttonHeldDown
-
+        jmp     buttonHeldDown
 @resetAutorepeatX:
         lda     #$00
+.endif
         sta     autorepeatX
-@buttonHeldDown:
+buttonHeldDown:
         lda     heldButtons
         and     #BUTTON_RIGHT
         beq     @notPressingRight
@@ -1404,25 +1432,29 @@ shift_tetrimino:
         bne     @restoreX
         lda     #$03
         sta     soundEffectSlot1Init
-        jmp     @ret
+        jmp     shift_ret
 
 @notPressingRight:
         lda     heldButtons
         and     #BUTTON_LEFT
-        beq     @ret
+        beq     shift_ret
         dec     tetriminoX
         jsr     isPositionValid
         bne     @restoreX
         lda     #$03
         sta     soundEffectSlot1Init
-        jmp     @ret
+        jmp     shift_ret
 
 @restoreX:
         lda     originalY
         sta     tetriminoX
+.if ANYDAS = 1
+        lda     #$01
+.else
         lda     #DAS_RESET
+.endif
         sta     autorepeatX
-@ret:   rts
+shift_ret:   rts
 
 stageSpriteForCurrentPiece:
         lda     tetriminoX
@@ -2689,12 +2721,25 @@ playState_spawnNextTetrimino:
         lda     spawnOrientationFromOrientation,x
         sta     currentPiece
         jsr     incrementPieceStat
+.if ANYDAS = 1
+        lda     anydasARECharge
+        cmp     #$01
+        bne     @dontResetAutorepeatx
+        sta     autorepeatX
+        nop
+        nop
+        nop
+        nop
+        nop
+@dontResetAutorepeatx:
+.else
         lda     numberOfPlayers
         cmp     #$01
         beq     @onePlayerPieceSelection
         lda     twoPlayerPieceDelayPiece
         sta     nextPiece
         jmp     @resetDownHold
+.endif
 
 @onePlayerPieceSelection:
         jsr     chooseNextTetrimino
@@ -2887,11 +2932,19 @@ playState_lockTetrimino:
 @ret:   rts
 
 playState_updateGameOverCurtain:
+.if ANYDAS = 1
+        lda     newlyPressedButtons_player1
+        and     #BUTTON_START
+        beq     @ret
+        jmp     @endingAnimationCheck
+        nop
+.else
         lda     curtainRow
         cmp     #$14
         beq     @curtainFinished
         lda     frameCounter
         and     #$03
+.endif
         bne     @ret
         ldx     curtainRow
         bmi     @incrementCurtainRow
@@ -2919,6 +2972,22 @@ playState_updateGameOverCurtain:
 @ret:   rts
 
 @curtainFinished:
+.if ANYDAS = 1
+@endingAnimationCheck:
+        lda     newlyPressedButtons_player1
+        cmp     #$10
+        bne     @startNotPressed
+        lda     gameType
+        bne     @bGameOrUnder30K
+        lda     player1_score+2
+        cmp     #$03
+        bcc     @bGameOrUnder30K
+        jsr     endingAnimation_maybe
+@bGameOrUnder30K:
+        jmp     @exitGame
+@startNotPressed:  rts
+        .byte $00,$00,$00,$00,$00,$00
+.else
 .if NWC = 1
         jsr     updateAudioWaitForNmiAndResetOamStaging
         jmp     @curtainFinished
@@ -2938,6 +3007,7 @@ playState_updateGameOverCurtain:
         lda     newlyPressedButtons_player1
         cmp     #BUTTON_START
         bne     @ret2
+.endif
 @exitGame:
         lda     #$00
         sta     playState
@@ -3268,10 +3338,21 @@ L9C84:  lda     score+2
         and     #$F0
         cmp     #$A0
         bcc     L9C94
+.if ANYDAS = 1
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+.else
         lda     #$99
         sta     score
         sta     score+1
         sta     score+2
+.endif
 L9C94:  dec     generalCounter
         bne     L9C37
         lda     outOfDateRenderFlags
@@ -3520,8 +3601,11 @@ gameModeState_checkForResetKeyCombo:
 .endif
         inc     gameModeState
         rts
-
+.if ANYDAS = 1
+@reset: jsr     clearLineCounterThenUpdateAudio2
+.else
 @reset: jsr     updateAudio2
+.endif
         lda     #$00
         sta     gameMode
         rts
@@ -3621,7 +3705,11 @@ endingAnimationB:
         lda     #$0A
         jsr     setMusicTrack
         lda     #ENDING_SLEEP_TIME_1
+.if ANYDAS = 1
+        jsr     render_endingUnskippable_B
+.else
         jsr     render_endingUnskippable
+.endif
         lda     player1_score
         sta     totalScore
         lda     player1_score+1
@@ -3635,7 +3723,11 @@ endingAnimationB:
         sta     player1_score+1
         sta     player1_score+2
         lda     #ENDING_SLEEP_TIME_2
+.if ANYDAS = 1
+        jsr     render_endingUnskippable_B
+.else
         jsr     render_endingUnskippable
+.endif
         lda     bTypeLevelBonus
         beq     @checkForHeightBonus
 @addLevelBonus:
@@ -3654,11 +3746,19 @@ endingAnimationB:
         lda     #$01
         sta     soundEffectSlot1Init
         lda     #ENDING_SLEEP_TIME_3
+.if ANYDAS = 1
+        jsr     render_endingUnskippable_B
+.else
         jsr     render_endingUnskippable
+.endif
         lda     bTypeLevelBonus
         bne     @addLevelBonus
         lda     #ENDING_SLEEP_TIME_2
+.if ANYDAS = 1
+        jsr     render_endingUnskippable_B
+.else
         jsr     render_endingUnskippable
+.endif
 @checkForHeightBonus:
         lda     bTypeHeightBonus
         beq     @startNotPressed
@@ -3678,19 +3778,39 @@ endingAnimationB:
         lda     #$01
         sta     soundEffectSlot1Init
         lda     #ENDING_SLEEP_TIME_3
+.if ANYDAS = 1
+        jsr     render_endingUnskippable_B
+.else
         jsr     render_endingUnskippable
+.endif
         lda     bTypeHeightBonus
         bne     @addHeightBonus
         lda     #$02
         sta     soundEffectSlot1Init
         lda     #ENDING_SLEEP_TIME_2
+.if ANYDAS = 1
+        jsr     render_endingUnskippable_B
+.else
         jsr     render_endingUnskippable
+.endif
 @startNotPressed:
+.if ANYDAS = 1
+@loop:
+        jsr     render_endingUnskippable_B
+        lda     player2_score
+        beq     @loop
+        nop
+        nop
+        nop
+        nop
+        nop
+.else
         jsr     render_ending
         jsr     updateAudioWaitForNmiAndResetOamStaging
         lda     newlyPressedButtons_player1
         cmp     #BUTTON_START
         bne     @startNotPressed
+.endif
         lda     player1_levelNumber
         sta     levelNumber
         lda     totalScore
@@ -4267,7 +4387,11 @@ gameModeState_startButtonHandling:
         sta     renderMode
         jsr     updateAudioAndWaitForNmi
 .if NWC <> 1
-        lda     #$16
+    .if ANYDAS = 1
+            lda     currentPpuMask
+    .else
+            lda     #$16
+    .endif
         sta     PPUMASK
 .endif
         lda     #$FF
@@ -4275,13 +4399,24 @@ gameModeState_startButtonHandling:
         ldy     #>oamStaging
         jsr     memset_page
 @pauseLoop:
+.if ANYDAS = 1
+        lda     #PAUSE_SPRITE_X
+        sta     spriteXOffset
+        lda     #PAUSE_SPRITE_Y
+        sta     spriteYOffset
+.else
         lda     #$70
         sta     spriteXOffset
         lda     #$77
         sta     spriteYOffset
+.endif
         lda     #$05
         sta     spriteIndexInOamContentLookup
+.if ANYDAS = 1
+        jsr     stageSpritesThenLoadSprites
+.else
         jsr     loadSpriteIntoOamStaging
+.endif
         lda     newlyPressedButtons_player1
         cmp     #BUTTON_START
         beq     @resume
@@ -4352,17 +4487,30 @@ typebSuccessGraphic:
         .byte   $3E,$3E,$3E,$3E,$3E,$3F,$80
 sleep_for_14_vblanks:
         lda     #$14
+.if ANYDAS <> 1
         sta     sleepCounter
-@loop:  jsr     updateAudioWaitForNmiAndResetOamStaging
+sleep14loop:
+        jsr     updateAudioWaitForNmiAndResetOamStaging
         lda     sleepCounter
-        bne     @loop
+        bne     sleep14loop
         rts
-
+.endif
 sleep_for_a_vblanks:
         sta     sleepCounter
-@loop:  jsr     updateAudioWaitForNmiAndResetOamStaging
+sleepALoop:
+        jsr     updateAudioWaitForNmiAndResetOamStaging
+.if ANYDAS = 1
+        lda     newlyPressedButtons_player1
+        and     #BUTTON_START
+        bne     sleepAReturn
+        nop
+        nop
+        nop
+        nop
+.endif
         lda     sleepCounter
-        bne     @loop
+        bne     sleepALoop
+sleepAReturn:
         rts
 
 .if PAL = 1
@@ -5590,12 +5738,16 @@ type_a_ending_nametable:
 .segment        "unreferenced_data1": absolute
 
 unreferenced_data1:
-.if PAL = 1
-        .incbin "data/unreferenced_data1_pal.bin"
-.elseif NWC = 1
-        .include "data/unreferenced_data1_nwc.asm"
+.if ANYDAS = 1
+    .include "anydas.asm"
 .else
+    .if PAL = 1
+        .incbin "data/unreferenced_data1_pal.bin"
+    .elseif NWC = 1
+        .include "data/unreferenced_data1_nwc.asm"
+    .else
         .incbin "data/unreferenced_data1.bin"
+    .endif
 .endif
 
 ; End of "unreferenced_data1" segment
@@ -7495,7 +7647,11 @@ reset:
         jsr     $F1BD
         lda     #$00
         jsr     $F1BD
+.if ANYDAS = 1
+        jmp     validateSRAMThenInitRam
+.else
         jmp     initRam
+.endif
 
 .include "data/unreferenced_data5_nwc.asm"
 

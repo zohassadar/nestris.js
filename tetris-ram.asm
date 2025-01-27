@@ -10,7 +10,20 @@ patchToPpuAddr: .res 1                           ; $0014
 rng_seed: .res 2                                 ; $0017
 spawnID: .res 1                                  ; $0019
 spawnCount: .res 1                               ; $001A
-.res 24
+
+; Anydas
+resetCounter: .res $1
+anydasMenu: .res $1                 ; $001C
+
+anydasSettings:
+anydasDASValue: .res $1             ; $001D
+anydasARRValue: .res $1             ; $001E
+anydasARECharge: .res $1            ; $001F
+levelOffset: .res $1                ; $0020
+anydasSettingsEnd:
+
+ANYDAS_OPTIONS_LENGTH = <(anydasSettingsEnd-anydasSettings)
+.res 18
 verticalBlankingInterval: .res 1                 ; $0033
 unused_0E: .res 1                                ; $0034 Always $0E
 .res 11
