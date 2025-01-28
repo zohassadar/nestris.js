@@ -3,8 +3,10 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 
-const srcDir = "src"
-const buildDir = "build"
+const srcDir = path.join(__dirname, 'src');
+const buildDir = path.join(__dirname, 'build');
+
+fs.mkdirSync(buildDir, { recursive: true });
 
 console.log('TetrisNESDisasm buildscript');
 console.time('build');
@@ -14,14 +16,39 @@ console.time('build');
 const args = process.argv.slice(2);
 
 if (args.includes('-h')) {
-    console.log(`usage: node build.js [-p] [-n] [-w] [-h]
+    console.log(`usage: node build.js [OPTION]
 
 -p  build PAL version
 -n  build NWC1990 version
 -a  build AnyDAS hack
 -w  force WASM compiler
+-c  clean
 -h  you are here
 `);
+    process.exit(0);
+}
+
+if (args.includes('-c')) {
+    console.log('cleaning');
+    try {
+        fs.rmSync(buildDir, { recursive: true });
+    } catch {
+        console.error(`Unable to delete ${buildDir}`);
+    }
+    gfxDir = path.join(srcDir, 'gfx');
+    fs.readdirSync(gfxDir)
+        .filter((name) => name.match(/\.chr$/))
+        .forEach((name) => {
+            console.log(`Deleting: ${name}`);
+            fs.unlinkSync(path.join(gfxDir, name));
+        });
+    nametableDir = path.join(gfxDir, 'nametables');
+    fs.readdirSync(nametableDir)
+        .filter((name) => name.match(/\.bin$/))
+        .forEach((name) => {
+            console.log(`Deleting: ${name}`);
+            fs.unlinkSync(path.join(nametableDir, name));
+        });
     process.exit(0);
 }
 
@@ -64,7 +91,7 @@ if (args.includes('-p')) {
     output = 'tetris-nwc';
 }
 
-if (args.includes('-a')){
+if (args.includes('-a')) {
     console.log('building AnyDAS hack');
     compileFlags.push('-D', 'ANYDAS=1');
     output = 'tetris-anydas';
@@ -79,7 +106,7 @@ console.log();
 // build / compress nametables
 
 console.time('nametables');
-require(path.join(__dirname, srcDir, 'gfx', 'nametables', 'build'));
+require(path.join(srcDir, 'gfx', 'nametables', 'build'));
 console.timeEnd('nametables');
 
 // PNG -> CHR
@@ -88,7 +115,7 @@ console.time('CHR');
 
 const png2chr = require(path.join(__dirname, 'tools', 'png2chr', 'convert'));
 
-const pngDir = path.join(__dirname, srcDir, 'gfx');
+const pngDir = path.join(srcDir, 'gfx');
 
 fs.readdirSync(pngDir)
     .filter((name) => name.endsWith('.png'))
@@ -111,13 +138,15 @@ console.timeEnd('CHR');
 
 // build object files
 
-const ca65bin = nativeCC65 ? 'ca65' : `node ${path.join(__dirname,'tools','assemble','ca65.js')}`;
+const ca65bin = nativeCC65
+    ? 'ca65'
+    : `node ${path.join(__dirname, 'tools', 'assemble', 'ca65.js')}`;
 const flags = compileFlags.length ? ` ${compileFlags.join(' ')}` : '';
 
 console.time('assemble');
 
-tetrisAsm = path.join(srcDir, "tetris.asm");
-tetrisCfg = path.join(srcDir, "tetris.nes.cfg");
+tetrisAsm = path.join(srcDir, 'tetris.asm');
+tetrisCfg = path.join(srcDir, 'tetris.nes.cfg');
 
 exec(`${ca65bin}${flags} -g ${tetrisAsm} -o ${output}.o`);
 
@@ -125,7 +154,9 @@ console.timeEnd('assemble');
 
 // link object files
 
-const ld65bin = nativeCC65 ? 'ld65' : `node ${path.join(__dirname,'tools','assemble','ld65.js')}`;
+const ld65bin = nativeCC65
+    ? 'ld65'
+    : `node ${path.join(__dirname, 'tools', 'assemble', 'ld65.js')}`;
 
 console.time('link');
 
