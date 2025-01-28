@@ -62,6 +62,12 @@ if (args.includes('-p')) {
 
 console.log();
 
+// build / compress nametables
+
+console.time('nametables');
+require('./gfx/nametables/build');
+console.timeEnd('nametables');
+
 // PNG -> CHR
 
 console.time('CHR');
