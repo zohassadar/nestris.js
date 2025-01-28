@@ -11,6 +11,18 @@ function strip(_array) {
     return stripped;
 }
 
+function writeStripe(filename, address, buffer) {
+    const striped = [];
+    for (let i = 0; i < buffer.length; i+=32){
+        striped.push((address+i) >> 8);
+        striped.push((address+i) & 0xFF);
+        striped.push(32);
+        striped.push(...buffer.slice(i,i+32));
+        }
+    striped.push(0xFF);
+    writeFileSync(filename, Buffer.from(striped));
+    }
+
 function readStripe(filename) {
     const bin = readFileSync(filename);
     return strip(bin);
@@ -46,11 +58,11 @@ function drawTiles(buffer, lookup, tiles) {
     [...tiles.trim().split('\n').join('')].forEach((d, i) => {
         if (d !== '#') {
             const charCode = d.charCodeAt(0);
-            if (charCode > STR_OFFSET) {
-                buffer[i] = charCode - STR_OFFSET;
-            } else {
+            // if (charCode > STR_OFFSET) {
+            //     buffer[i] = charCode - STR_OFFSET;
+            // } else {
                 buffer[i] = lookup.indexOf(d);
-            }
+            // }
         }
     });
 }
@@ -88,6 +100,7 @@ function flatLookup(lookup) {
 module.exports = {
     strip,
     readStripe,
+    writeStripe,
     writeRLE,
     printNT,
     blankNT,
