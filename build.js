@@ -103,34 +103,6 @@ fs.readdirSync(pngDir)
 
 console.timeEnd('CHR');
 
-// Python nametables
-
-console.time('nametables');
-
-const ntDir = path.join(__dirname, 'gfx', 'nametables');
-fs.readdirSync(ntDir)
-    .filter((name) => name.endsWith('_nametable.py'))
-    .forEach((name) => {
-        const py = path.join(ntDir, name);
-        const nt = path.join(ntDir, name.replace('.py', '.bin'));
-
-        const pyStat = fs.statSync(py, { throwIfNoEntry: false });
-        const ntStat = fs.statSync(nt, { throwIfNoEntry: false });
-
-        const staleNT = !ntStat || ntStat.mtime < pyStat.mtime;
-
-        if (staleNT || args.includes('-N')) {
-            console.log(`${name} => ${path.basename(nt)}`);
-            if (compileFlags.length > 0) {
-                exec(`python ${py} ${compileFlags.join(' ')}`);
-            } else {
-                exec(`python ${py}`);
-            }
-        }
-    });
-
-console.timeEnd('nametables');
-
 // build object files
 
 const ca65bin = nativeCC65 ? 'ca65' : 'node ./tools/assemble/ca65.js';
