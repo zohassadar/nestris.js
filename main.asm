@@ -9,8 +9,14 @@ nmi:    pha
         pha
         tya
         pha
+.if ANYDAS=1
+        jmp     renderAnydasMenu
+returnFromAnydasRender:
+        nop
+.else
         lda     #$00
         sta     oamStagingLength
+.endif
         jsr     render
         dec     sleepCounter
         lda     sleepCounter
@@ -38,7 +44,11 @@ nmi:    pha
         sta     PPUSCROLL
         lda     #$01
         sta     verticalBlankingInterval
+.if ANYDAS = 1
+        jsr     anydasControllerInput
+.else
         jsr     pollControllerButtons
+.endif
         pla
         tay
         pla
@@ -80,7 +90,7 @@ initRamContinued:
         lda     initMagic+4
         cmp     #$9A
         bne     @initHighScoreTable
-        jmp     @continueWarmBootInit
+        jmp     continueWarmBootInit
 
         ldx     #$00
 ; Only run on cold boot
@@ -103,7 +113,7 @@ initRamContinued:
         sta     initMagic+3
         lda     #$9A
         sta     initMagic+4
-@continueWarmBootInit:
+continueWarmBootInit:
         ldx     #$89
         stx     rng_seed
         dex
@@ -2371,6 +2381,21 @@ render_mode_play_and_demo:
         lda     numberOfPlayers
         cmp     #$02
         beq     @renderScore
+.if ANYDAS = 1
+        lda     #$22
+        sta     PPUADDR
+        lda     #$B9
+        sta     PPUADDR
+        lda     player1_levelNumber
+        jsr     renderByteBCD
+        sec
+        bcs     @skipthis
+        nop
+        nop
+        nop
+        nop
+@skipthis:
+.else
         ldx     player1_levelNumber
         lda     levelDisplayTable,x
         sta     generalCounter
@@ -2380,6 +2405,7 @@ render_mode_play_and_demo:
         sta     PPUADDR
         lda     generalCounter
         jsr     twoDigsToPPU
+.endif
         jsr     updatePaletteForLevel
         lda     outOfDateRenderFlags
         and     #~RENDER_LEVEL
@@ -2411,10 +2437,16 @@ render_mode_play_and_demo:
         lda     outOfDateRenderFlags
         and     #RENDER_STATS
         beq     @renderTetrisFlashAndSound
+.if ANYDAS = 1
+        nop
+        ldx     player1_currentPiece
+        lda     tetriminoTypeFromOrientation,x
+.else
         lda     #$00
         sta     tmpCurrentPiece
 @renderPieceStat:
         lda     tmpCurrentPiece
+.endif
         asl     a
         tax
         lda     pieceToPpuStatAddr,x
@@ -2425,10 +2457,16 @@ render_mode_play_and_demo:
         sta     PPUDATA
         lda     statsByType,x
         jsr     twoDigsToPPU
+.if ANYDAS = 1
+        .repeat 8
+        nop
+        .endrepeat
+.else
         inc     tmpCurrentPiece
         lda     tmpCurrentPiece
         cmp     #$07
         bne     @renderPieceStat
+.endif
         lda     outOfDateRenderFlags
         and     #~RENDER_STATS
         sta     outOfDateRenderFlags
@@ -2982,7 +3020,7 @@ playState_updateGameOverCurtain:
         lda     player1_score+2
         cmp     #$03
         bcc     @bGameOrUnder30K
-        jsr     endingAnimation_maybe
+        jsr     endingAnimation
 @bGameOrUnder30K:
         jmp     @exitGame
 @startNotPressed:  rts
@@ -3706,7 +3744,7 @@ endingAnimationB:
         jsr     setMusicTrack
         lda     #ENDING_SLEEP_TIME_1
 .if ANYDAS = 1
-        jsr     render_endingUnskippable_B
+        jsr     render_endingSkippable_B
 .else
         jsr     render_endingUnskippable
 .endif
@@ -3724,7 +3762,7 @@ endingAnimationB:
         sta     player1_score+2
         lda     #ENDING_SLEEP_TIME_2
 .if ANYDAS = 1
-        jsr     render_endingUnskippable_B
+        jsr     render_endingSkippable_B
 .else
         jsr     render_endingUnskippable
 .endif
@@ -3747,7 +3785,7 @@ endingAnimationB:
         sta     soundEffectSlot1Init
         lda     #ENDING_SLEEP_TIME_3
 .if ANYDAS = 1
-        jsr     render_endingUnskippable_B
+        jsr     render_endingSkippable_B
 .else
         jsr     render_endingUnskippable
 .endif
@@ -3755,7 +3793,7 @@ endingAnimationB:
         bne     @addLevelBonus
         lda     #ENDING_SLEEP_TIME_2
 .if ANYDAS = 1
-        jsr     render_endingUnskippable_B
+        jsr     render_endingSkippable_B
 .else
         jsr     render_endingUnskippable
 .endif
@@ -3779,7 +3817,7 @@ endingAnimationB:
         sta     soundEffectSlot1Init
         lda     #ENDING_SLEEP_TIME_3
 .if ANYDAS = 1
-        jsr     render_endingUnskippable_B
+        jsr     render_endingSkippable_B
 .else
         jsr     render_endingUnskippable
 .endif
@@ -3789,14 +3827,14 @@ endingAnimationB:
         sta     soundEffectSlot1Init
         lda     #ENDING_SLEEP_TIME_2
 .if ANYDAS = 1
-        jsr     render_endingUnskippable_B
+        jsr     render_endingSkippable_B
 .else
         jsr     render_endingUnskippable
 .endif
 @startNotPressed:
 .if ANYDAS = 1
 @loop:
-        jsr     render_endingUnskippable_B
+        jsr     render_endingSkippable_B
         lda     player2_score
         beq     @loop
         nop
@@ -4309,7 +4347,11 @@ highScoreEntryScreen:
         sta     highScoreEntryCurrentLetter
         lda     #RENDER_HIGH_SCORE_LETTER
         sta     outOfDateRenderFlags
+.if ANYDAS = 1
+        jsr     copyHighScoresToSramThenWait
+.else
         jsr     updateAudioWaitForNmiAndResetOamStaging
+.endif
         jmp     @renderFrame
 
 @ret:   jsr     updateAudioWaitForNmiAndResetOamStaging
@@ -4413,7 +4455,7 @@ gameModeState_startButtonHandling:
         lda     #$05
         sta     spriteIndexInOamContentLookup
 .if ANYDAS = 1
-        jsr     stageSpritesThenLoadSprites
+        jsr     stageSpritesThenloadSprites
 .else
         jsr     loadSpriteIntoOamStaging
 .endif
@@ -5090,7 +5132,11 @@ endingAnimationA:
         lda     #$0A
         jsr     setMusicTrack
         lda     #ENDING_SLEEP_TIME_1
+.if ANYDAS = 1
+        jmp     render_endingSkippable_A
+.else
         jsr     render_endingUnskippable
+.endif
 @endingSleep:
         jsr     render_ending
         jsr     updateAudioWaitForNmiAndResetOamStaging
@@ -7644,18 +7690,18 @@ reset:
         lda     #PRG_32K_BANK
 .endif
         jsr     changePRGBank
+.if ANYDAS = 1
+        jmp     validateSRAMThenInitRam
+.else
         jmp     initRam
+.endif
 
 .if NWC = 1
         lda     #$10
         jsr     $F1BD
         lda     #$00
         jsr     $F1BD
-.if ANYDAS = 1
-        jmp     validateSRAMThenInitRam
-.else
         jmp     initRam
-.endif
 
 .include "data/unreferenced_data5_nwc.asm"
 

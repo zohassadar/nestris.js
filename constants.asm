@@ -142,3 +142,6 @@ lUp    = $10
 iVert  = $11
 iHoriz = $12
 hidden = $13
+
+PAUSE_SPRITE_X := $74
+PAUSE_SPRITE_Y := $58

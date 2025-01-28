@@ -186,7 +186,10 @@ statsByType: .res 14                             ; $03F0
 .res 2
 playfield: .res 256                              ; $0400
 playfieldForSecondPlayer: .res 256               ; $0500
-.res 128
+.res 2
+menuMoveThrottle: .res 1         ; $0602
+menuThrottleTmp: .res 1          ; $0603
+.res 124
 musicStagingSq1Lo: .res 1                        ; $0680
 musicStagingSq1Hi: .res 1                        ; $0681
 audioInitialized: .res 1                         ; $0682
@@ -253,11 +256,30 @@ currentlyPlayingMusicTrack: .res 1               ; $06FD Copied from musicTrack
 
 .res 1
 unreferenced_soundRngTmp: .res 1                 ; $06FF
+highScores:
 highScoreNames: .res 48                          ; $0700
 highScoreScoresA: .res 12                        ; $0730
 highScoreScoresB: .res 12                        ; $073C
 highScoreLevels: .res 8                          ; $0748
+highScoresEnd:
+HIGHSCORES_LENGTH = <(highScoresEnd-highScores)
+
 initMagic: .res 5                                ; $0750 Initialized to a hard-coded number. When resetting, if not correct number then it knows this is a cold boot
+
+.segment "SRAM"
+
+sramHighScores:
+.res HIGHSCORES_LENGTH
+
+sramInitMagic:	.res $05        	; $6050
+
+sramAnydasSettings:
+.res ANYDAS_OPTIONS_LENGTH
+
+sramMusicType: .res 1
+sramGameType: .res 1
+sramStartLevel: .res 1
+sramStartHeight: .res 1
 
 .if NWC = 1
 tetriminoX      := player1_tetriminoX

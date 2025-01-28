@@ -15,6 +15,7 @@ if (args.includes('-h')) {
 
 -p  build PAL version
 -n  build NWC1990 version
+-a  build AnyDAS hack
 -w  force WASM compiler
 -h  you are here
 `);
@@ -59,6 +60,13 @@ if (args.includes('-p')) {
     compileFlags.push('-D', 'NWC=1');
     output = 'tetris-nwc';
 }
+
+if (args.includes('-a')){
+    console.log('building AnyDAS hack');
+    compileFlags.push('-D', 'ANYDAS=1');
+    output = 'tetris-anydas';
+}
+process.env['NESTRIS_FLAGS'] = compileFlags.join(' ');
 
 console.log();
 
