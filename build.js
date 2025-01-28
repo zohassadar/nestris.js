@@ -3,6 +3,9 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 
+const srcDir = "src"
+const buildDir = "build"
+
 console.log('TetrisNESDisasm buildscript');
 console.time('build');
 
@@ -66,6 +69,9 @@ if (args.includes('-a')){
     compileFlags.push('-D', 'ANYDAS=1');
     output = 'tetris-anydas';
 }
+
+output = path.join(buildDir, output);
+
 process.env['NESTRIS_FLAGS'] = compileFlags.join(' ');
 
 console.log();
@@ -73,16 +79,16 @@ console.log();
 // build / compress nametables
 
 console.time('nametables');
-require('./gfx/nametables/build');
+require(path.join(__dirname, srcDir, 'gfx', 'nametables', 'build'));
 console.timeEnd('nametables');
 
 // PNG -> CHR
 
 console.time('CHR');
 
-const png2chr = require('./tools/png2chr/convert');
+const png2chr = require(path.join(__dirname, 'tools', 'png2chr', 'convert'));
 
-const pngDir = path.join(__dirname, 'gfx');
+const pngDir = path.join(__dirname, srcDir, 'gfx');
 
 fs.readdirSync(pngDir)
     .filter((name) => name.endsWith('.png'))
@@ -105,23 +111,26 @@ console.timeEnd('CHR');
 
 // build object files
 
-const ca65bin = nativeCC65 ? 'ca65' : 'node ./tools/assemble/ca65.js';
+const ca65bin = nativeCC65 ? 'ca65' : `node ${path.join(__dirname,'tools','assemble','ca65.js')}`;
 const flags = compileFlags.length ? ` ${compileFlags.join(' ')}` : '';
 
 console.time('assemble');
 
-exec(`${ca65bin}${flags} -g tetris.asm -o ${output}.o`);
+tetrisAsm = path.join(srcDir, "tetris.asm");
+tetrisCfg = path.join(srcDir, "tetris.nes.cfg");
+
+exec(`${ca65bin}${flags} -g ${tetrisAsm} -o ${output}.o`);
 
 console.timeEnd('assemble');
 
 // link object files
 
-const ld65bin = nativeCC65 ? 'ld65' : 'node ./tools/assemble/ld65.js';
+const ld65bin = nativeCC65 ? 'ld65' : `node ${path.join(__dirname,'tools','assemble','ld65.js')}`;
 
 console.time('link');
 
 exec(
-    `${ld65bin} -m ${output}.map -Ln ${output}.lbl --dbgfile ${output}.dbg -o ${output}.nes -C tetris.nes.cfg ${output}.o`,
+    `${ld65bin} -m ${output}.map -Ln ${output}.lbl --dbgfile ${output}.dbg -o ${output}.nes -C ${tetrisCfg} ${output}.o`,
 );
 
 console.timeEnd('link');
@@ -145,7 +154,7 @@ function hashFile(filename, sha1file) {
     }
 }
 
-hashFile(`${output}.nes`, `${output}.sha1`);
+hashFile(`${output}.nes`, `${output.replace('build', 'sha1files')}.sha1`);
 
 console.log();
 
