@@ -7,6 +7,7 @@ const {
 } = require('./nametables');
 
 const anydas = !!process.env['NESTRIS_FLAGS']?.match(/-D ANYDAS=1/);
+const nwc = !!process.env['NESTRIS_FLAGS']?.match(/-D NWC=1/);
 
 const lookup = flatLookup(`
 0123456789ABCDEF
@@ -95,6 +96,11 @@ drawTiles(buffer, lookup, `
 ¼½wß_¾¾üßÜzßÎÜíÞ¾ÎÜýÜyìýüíÞÞ¾ÜíÜ
 ÌÍÞÜÝýüÝß¾ÞÜý¾ÎÜyÞìÝßÞÞ¼½Þ¾Üxßüß
 `);
+}
+
+if (nwc && !anydas) {
+    // remove "PUSH START" for NWC version
+    buffer.splice(20 * 32 + 7, 10, ...[...Array(10)].map(() => 0xff));
 }
 
 if (anydas) {

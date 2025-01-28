@@ -5748,11 +5748,7 @@ defaultHighScoresTable:
 legal_screen_nametable:
         .incbin "gfx/nametables/legal_screen_nametable.bin"
 title_screen_nametable:
-.if NWC = 1
-        .include "gfx/nametables/title_screen_nametable.asm"
-.else
         .incbin "gfx/nametables/title_screen_nametable.bin"
-.endif
 game_type_menu_nametable:
         .incbin "gfx/nametables/game_type_menu_nametable.bin"
 level_menu_nametable:
