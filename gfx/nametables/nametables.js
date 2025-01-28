@@ -11,7 +11,7 @@ function strip(_array) {
     return stripped;
 }
 
-function writeStripe(filename, address, buffer) {
+function writeStripe(filename, address, buffer, preWrite) {
     const striped = [];
     for (let i = 0; i < buffer.length; i+=32){
         striped.push((address+i) >> 8);
@@ -20,6 +20,7 @@ function writeStripe(filename, address, buffer) {
         striped.push(...buffer.slice(i,i+32));
         }
     striped.push(0xFF);
+    if (preWrite) {preWrite(striped)};
     writeFileSync(filename, Buffer.from(striped));
     }
 

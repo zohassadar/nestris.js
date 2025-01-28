@@ -1,1 +1,10 @@
 require('./game');
+require('./enter_high_score');
+require('./high_scores');
+require('./game_type_menu');
+require('./legal_screen');
+require('./level_menu');
+require('./title_screen');
+require('./type_a_ending');
+require('./type_b_ending');
+require('./type_b_lvl9_ending');
