@@ -1,6 +1,8 @@
 # Tetris
 
-This is a disassembly of Tetris (NES).
+This is a disassembly of Tetris (NES).  
+
+Original repo: https://github.com/CelestialAmber/TetrisNESDisasm
 
 It builds the following rom:
 
@@ -11,4 +13,5 @@ To set up the repository, see [**INSTALL.md**](INSTALL.md).
 
 Thanks to https://github.com/ejona86 for creating an info file and other files used to generate the disassembly code and other parts of the disassembly. (Original repository link:  https://github.com/ejona86/taus)
 
-Build script derived from https://github.com/kirjavascript/TetrisGYM
+
+Build script and various tools from https://github.com/kirjavascript/TetrisGYM
