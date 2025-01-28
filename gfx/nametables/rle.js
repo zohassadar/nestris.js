@@ -1,3 +1,5 @@
+// from https://github.com/kirjavascript/TetrisGYM
+
 function konamiComp(buffer) {
     const compressed = [];
 

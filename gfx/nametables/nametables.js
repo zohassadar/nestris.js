@@ -1,3 +1,6 @@
+// https://github.com/kirjavascript/TetrisGYM
+// modified from original
+
 const { readFileSync, writeFileSync } = require('fs');
 const { konamiComp } = require('./rle');
 
