@@ -9,7 +9,7 @@
 
 INES_MAPPER = 1 ; 0 = NROM
 INES_MIRROR = 0 ; 0 = horizontal mirroring, 1 = vertical mirroring
-.ifdef ANYDAS
+.if ANYDAS = 1
 INES_SRAM = 1
 .else
 INES_SRAM = 0 ; 1 = battery backed SRAM at $6000-7FFF
@@ -29,7 +29,7 @@ INES_SRAM = 0 ; 1 = battery backed SRAM at $6000-7FFF
 .include "main.asm"
 
 .segment "CHR"
-.if ANYDAS=1
+.if ANYDAS = 1
 .incbin "gfx/title_menu_tileset_anydas_seed.chr"
 .else
 .incbin "gfx/title_menu_tileset.chr"

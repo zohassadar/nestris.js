@@ -16,19 +16,21 @@ console.time('build');
 const args = process.argv.slice(2);
 
 if (args.includes('-h')) {
-    console.log(`usage: node build.js [OPTION]
+    console.log(`usage: node build.js [OPTIONS] [-- <ca65 args>]
 
--p  build PAL version
--n  build NWC1990 version
--a  build AnyDAS hack
--w  force WASM compiler
--c  clean
--h  you are here
+    -p  build PAL version
+    -n  build NWC1990 version
+    -a  build AnyDAS hack
+    -c  rebuild chr
+    -w  force WASM compiler
+    -h  you are here
+
+    --clean
 `);
     process.exit(0);
 }
 
-if (args.includes('-c')) {
+if (args.includes('--clean')) {
     console.log('cleaning');
     try {
         fs.rmSync(buildDir, { recursive: true });
@@ -54,12 +56,15 @@ if (args.includes('-c')) {
 
 function exec(cmd) {
     const [exe, ...args] = cmd.split(' ');
-    const output = spawnSync(exe, args).output.flatMap(
-        (d) => d?.toString() || [],
-    );
-    if (output.length) {
-        console.log(output.join('\n'));
-        process.exit(0);
+    const result = spawnSync(exe, args);
+    if (result.stderr.length) {
+        console.error(result.stderr.toString());
+    }
+    if (result.stdout.length) {
+        console.log(result.stdout.toString());
+    }
+    if (result.status){
+        process.exit(result.status);
     }
 }
 const compileFlags = [];
@@ -98,6 +103,13 @@ if (args.includes('-a')) {
 }
 
 output = path.join(buildDir, output);
+
+// pass additional arguments to ca65
+if (args.includes('--')){
+    const addlFlags = args.slice(1+args.indexOf('--'));
+    compileFlags.push(...addlFlags);
+    args.splice(args.indexOf('--'), 1+addlFlags.length);
+    }
 
 process.env['NESTRIS_FLAGS'] = compileFlags.join(' ');
 
