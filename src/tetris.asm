@@ -1,6 +1,7 @@
 .setcpu "6502"
 .feature force_range ; allows -1 vs <-1 (used in orientationTable)
 .linecont
+.include "constants.asm"
 
 .segment "HEADER"
 
@@ -24,7 +25,6 @@ INES_SRAM = 0 ; 1 = battery backed SRAM at $6000-7FFF
 
 ; PRG segments
 
-.include "constants.asm"
 .include "tetris-ram.asm"
 .include "main.asm"
 
