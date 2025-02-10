@@ -13,16 +13,16 @@ spawnCount: .res 1                               ; $001A
 
 ; Anydas
 resetCounter: .res $1
-anydasMenu: .res $1                 ; $001C
+anydasMenu: .res $1                              ; $001C
 
 anydasSettings:
-anydasDASValue: .res $1             ; $001D
-anydasARRValue: .res $1             ; $001E
-anydasARECharge: .res $1            ; $001F
-levelOffset: .res $1                ; $0020
+anydasDASValue: .res $1                          ; $001D
+anydasARRValue: .res $1                          ; $001E
+anydasARECharge: .res $1                         ; $001F
+levelOffset: .res $1                             ; $0020
 anydasSettingsEnd:
-
 ANYDAS_OPTIONS_LENGTH = <(anydasSettingsEnd-anydasSettings)
+
 .res 18
 verticalBlankingInterval: .res 1                 ; $0033
 unused_0E: .res 1                                ; $0034 Always $0E
@@ -187,8 +187,8 @@ statsByType: .res 14                             ; $03F0
 playfield: .res 256                              ; $0400
 playfieldForSecondPlayer: .res 256               ; $0500
 .res 2
-menuMoveThrottle: .res 1         ; $0602
-menuThrottleTmp: .res 1          ; $0603
+menuMoveThrottle: .res 1                         ; $0602
+menuThrottleTmp: .res 1                          ; $0603
 .res 124
 musicStagingSq1Lo: .res 1                        ; $0680
 musicStagingSq1Hi: .res 1                        ; $0681
@@ -271,7 +271,7 @@ initMagic: .res 5                                ; $0750 Initialized to a hard-c
 sramHighScores:
 .res HIGHSCORES_LENGTH
 
-sramInitMagic:	.res $05        	; $6050
+sramInitMagic:    .res $05                       ; $6050
 
 sramAnydasSettings:
 .res ANYDAS_OPTIONS_LENGTH
