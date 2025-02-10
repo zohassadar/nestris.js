@@ -63,7 +63,7 @@ function exec(cmd) {
     if (result.stdout.length) {
         console.log(result.stdout.toString());
     }
-    if (result.status){
+    if (result.status) {
         process.exit(result.status);
     }
 }
@@ -105,11 +105,11 @@ if (args.includes('-a')) {
 output = path.join(buildDir, output);
 
 // pass additional arguments to ca65
-if (args.includes('--')){
-    const addlFlags = args.slice(1+args.indexOf('--'));
+if (args.includes('--')) {
+    const addlFlags = args.slice(1 + args.indexOf('--'));
     compileFlags.push(...addlFlags);
-    args.splice(args.indexOf('--'), 1+addlFlags.length);
-    }
+    args.splice(args.indexOf('--'), 1 + addlFlags.length);
+}
 
 process.env['NESTRIS_FLAGS'] = compileFlags.join(' ');
 
