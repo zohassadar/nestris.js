@@ -1,9 +1,4 @@
 __pycache__
-*.nes
 *.bin
-*.o
 *.chr
-*.lst
-*.lbl
-*.dbg
-*.map
+build
