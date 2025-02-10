@@ -5788,11 +5788,11 @@ unreferenced_data1:
     .include "anydas.asm"
 .else
     .if PAL = 1
-        .incbin "data/unreferenced_data1_pal.bin"
+        .include "data/unreferenced_data1_pal.asm"
     .elseif NWC = 1
         .include "data/unreferenced_data1_nwc.asm"
     .else
-        .incbin "data/unreferenced_data1.bin"
+        .include "data/unreferenced_data1.asm"
     .endif
 .endif
 
