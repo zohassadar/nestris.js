@@ -5746,19 +5746,19 @@ defaultHighScoresTable:
 ;.segment        "legal_screen_nametable": absolute
 
 legal_screen_nametable:
-        .incbin "gfx/nametables/legal_screen_nametable.bin"
+        .incbin "nametables/legal_screen_nametable.bin"
 title_screen_nametable:
-        .incbin "gfx/nametables/title_screen_nametable.bin"
+        .incbin "nametables/title_screen_nametable.bin"
 game_type_menu_nametable:
-        .incbin "gfx/nametables/game_type_menu_nametable.bin"
+        .incbin "nametables/game_type_menu_nametable.bin"
 level_menu_nametable:
-        .incbin "gfx/nametables/level_menu_nametable.bin"
+        .incbin "nametables/level_menu_nametable.bin"
 game_nametable:
-        .incbin "gfx/nametables/game_nametable.bin"
+        .incbin "nametables/game_nametable.bin"
 enter_high_score_nametable:
-        .incbin "gfx/nametables/enter_high_score_nametable.bin"
+        .incbin "nametables/enter_high_score_nametable.bin"
 high_scores_nametable:
-        .incbin "gfx/nametables/high_scores_nametable.bin"
+        .incbin "nametables/high_scores_nametable.bin"
 height_menu_nametablepalette_patch:
         .byte   $3F,$0A,$01,$16,$20,$6D,$01,$0A
         .byte   $20,$F3,$48,$FF,$21,$13,$48,$FF
@@ -5771,11 +5771,11 @@ height_menu_nametablepalette_patch:
         .byte   $22,$F3,$47,$FF,$23,$13,$47,$FF
         .byte   $FF
 type_b_lvl9_ending_nametable:
-        .incbin "gfx/nametables/type_b_lvl9_ending_nametable.bin"
+        .incbin "nametables/type_b_lvl9_ending_nametable.bin"
 type_b_ending_nametable:
-        .incbin "gfx/nametables/type_b_ending_nametable.bin"
+        .incbin "nametables/type_b_ending_nametable.bin"
 type_a_ending_nametable:
-        .incbin "gfx/nametables/type_a_ending_nametable.bin"
+        .incbin "nametables/type_a_ending_nametable.bin"
 
 ; End of "PRG_chunk1" segment
 .code

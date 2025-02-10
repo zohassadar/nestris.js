@@ -118,7 +118,7 @@ console.log();
 // build / compress nametables
 
 console.time('nametables');
-require(path.join(srcDir, 'gfx', 'nametables', 'build'));
+require(path.join(srcDir, 'nametables', 'build'));
 console.timeEnd('nametables');
 
 // PNG -> CHR
@@ -127,7 +127,7 @@ console.time('CHR');
 
 const png2chr = require(path.join(__dirname, 'tools', 'png2chr', 'convert'));
 
-const pngDir = path.join(srcDir, 'gfx');
+const pngDir = path.join(srcDir, 'chr');
 
 fs.readdirSync(pngDir)
     .filter((name) => name.endsWith('.png'))

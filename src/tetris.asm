@@ -30,12 +30,12 @@ INES_SRAM = 0 ; 1 = battery backed SRAM at $6000-7FFF
 
 .segment "CHR"
 .if ANYDAS = 1
-.incbin "gfx/title_menu_tileset_anydas_seed.chr"
+.incbin "chr/title_menu_tileset_anydas_seed.chr"
 .else
-.incbin "gfx/title_menu_tileset.chr"
+.incbin "chr/title_menu_tileset.chr"
 .endif
 .if NWC <> 1
-.incbin "gfx/typeB_ending_tileset.chr"
-.incbin "gfx/typeA_ending_tileset.chr"
+.incbin "chr/typeB_ending_tileset.chr"
+.incbin "chr/typeA_ending_tileset.chr"
 .endif
-.incbin "gfx/game_tileset.chr"
+.incbin "chr/game_tileset.chr"
