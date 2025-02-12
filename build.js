@@ -21,11 +21,12 @@ if (args.includes('-h')) {
     -p  build PAL version
     -n  build NWC1990 version
     -a  build AnyDAS hack
-    -c  rebuild chr
+    -c  use cnrom mapper
     -w  force WASM compiler
     -h  you are here
 
-    --clean
+    --chr       rebuild chr
+    --clean     delete generated files
 `);
     process.exit(0);
 }
@@ -63,7 +64,7 @@ function exec(cmd) {
     if (result.stdout.length) {
         console.log(result.stdout.toString());
     }
-    if (result.status) {
+    if (result.status){
         process.exit(result.status);
     }
 }
@@ -102,14 +103,19 @@ if (args.includes('-a')) {
     output = 'tetris-anydas';
 }
 
+if (args.includes('-c')) {
+    console.log('using CNROM mapper');
+    compileFlags.push('-D', 'CNROM=1');
+    output = 'tetris';
+}
 output = path.join(buildDir, output);
 
 // pass additional arguments to ca65
-if (args.includes('--')) {
-    const addlFlags = args.slice(1 + args.indexOf('--'));
+if (args.includes('--')){
+    const addlFlags = args.slice(1+args.indexOf('--'));
     compileFlags.push(...addlFlags);
-    args.splice(args.indexOf('--'), 1 + addlFlags.length);
-}
+    args.splice(args.indexOf('--'), 1+addlFlags.length);
+    }
 
 process.env['NESTRIS_FLAGS'] = compileFlags.join(' ');
 
@@ -140,7 +146,7 @@ fs.readdirSync(pngDir)
 
         const staleCHR = !chrStat || chrStat.mtime < pngStat.mtime;
 
-        if (staleCHR || args.includes('-c')) {
+        if (staleCHR || args.includes('--chr')) {
             console.log(`${name} => ${path.basename(chr)}`);
             fs.writeFileSync(chr, png2chr(fs.readFileSync(png)));
         }
@@ -197,7 +203,11 @@ function hashFile(filename, sha1file) {
     }
 }
 
-hashFile(`${output}.nes`, `${output.replace('build', 'sha1files')}.sha1`);
+if (args.includes('-c')) {
+    console.log('CNROM built.  Skipping validation');
+} else {
+    hashFile(`${output}.nes`, `${output.replace('build', 'sha1files')}.sha1`);
+}
 
 console.log();
 

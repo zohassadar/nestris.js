@@ -8,12 +8,17 @@
 ; This iNES header is from Brad Smith (rainwarrior)
 ; https://github.com/bbbradsmith/NES-ca65-example
 
-INES_MAPPER = 1 ; 0 = NROM
+.if CNROM = 1
+    INES_MAPPER = 3 ; CNROM
+.else
+    INES_MAPPER = 1 ; MMC1
+.endif
+
 INES_MIRROR = 0 ; 0 = horizontal mirroring, 1 = vertical mirroring
 .if ANYDAS = 1
-INES_SRAM = 1
+    INES_SRAM = 1
 .else
-INES_SRAM = 0 ; 1 = battery backed SRAM at $6000-7FFF
+    INES_SRAM = 0 ; 1 = battery backed SRAM at $6000-7FFF
 .endif
 
 .byte 'N', 'E', 'S', $1A ; ID
