@@ -197,7 +197,8 @@ function hashFile(filename, sha1file) {
     }
 }
 
-hashFile(`${output}.nes`, `${output.replace('build', 'sha1files')}.sha1`);
+// replace only last instance of build (otherwise breaks if build is part of path)
+hashFile(`${output}.nes`, `${output.replace(/(build)(?!.*\1)/, 'sha1files')}.sha1`);
 
 console.log();
 
